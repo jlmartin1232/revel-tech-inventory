@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   AppBar, Box, Button, Container, CssBaseline, FormControl,
-  FormControlLabel, FormLabel, InputLabel, MenuItem, Paper, Radio,
+  FormControlLabel, FormHelperText, FormLabel, InputLabel, MenuItem, Paper, Radio,
   RadioGroup, Select, Stack, TextField, ThemeProvider, Toolbar,
   Typography, createTheme,
 } from '@mui/material'
@@ -10,6 +10,7 @@ import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import DevicesRoundedIcon from '@mui/icons-material/DevicesRounded'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import MonitorHeartOutlinedIcon from '@mui/icons-material/MonitorHeartOutlined'
+import { categoryOptions, roleOptions, validateField } from './validation'
 
 const theme = createTheme({
   palette: {
@@ -187,7 +188,7 @@ function ViewPanel({ Icon, title, subtitle, placeholder, children }) {
   )
 }
 
-function RegisterForm({ formData, handleChange, handleSubmit }) {
+function RegisterForm({ formData, errors, handleChange, handleSubmit }) {
   return (
     <Box
       component={'form'}
@@ -204,10 +205,12 @@ function RegisterForm({ formData, handleChange, handleSubmit }) {
         name={'gadgetName'}
         value={formData.gadgetName}
         onChange={handleChange}
+        error={Boolean(errors.gadgetName)}
+        helperText={errors.gadgetName}
         fullWidth
       />
 
-      <FormControl fullWidth>
+      <FormControl error={Boolean(errors.category)} fullWidth>
         <InputLabel id={'category-label'}>Category</InputLabel>
         <Select
           labelId={'category-label'}
@@ -217,11 +220,13 @@ function RegisterForm({ formData, handleChange, handleSubmit }) {
           label={'Category'}
           onChange={handleChange}
         >
-          <MenuItem value={'Smartphone'}>Smartphone</MenuItem>
-          <MenuItem value={'Laptop'}>Laptop</MenuItem>
-          <MenuItem value={'Wearable'}>Wearable</MenuItem>
-          <MenuItem value={'Audio'}>Audio</MenuItem>
+          {categoryOptions.map((category) => (
+            <MenuItem key={category} value={category}>
+              {category}
+            </MenuItem>
+          ))}
         </Select>
+        <FormHelperText>{errors.category}</FormHelperText>
       </FormControl>
 
       <TextField
@@ -229,6 +234,8 @@ function RegisterForm({ formData, handleChange, handleSubmit }) {
         name={'manufacturer'}
         value={formData.manufacturer}
         onChange={handleChange}
+        error={Boolean(errors.manufacturer)}
+        helperText={errors.manufacturer}
         fullWidth
       />
 
@@ -238,6 +245,8 @@ function RegisterForm({ formData, handleChange, handleSubmit }) {
         type={'number'}
         value={formData.healthRating}
         onChange={handleChange}
+        error={Boolean(errors.healthRating)}
+        helperText={errors.healthRating}
         fullWidth
       />
 
@@ -246,10 +255,12 @@ function RegisterForm({ formData, handleChange, handleSubmit }) {
         name={'techBrand'}
         value={formData.techBrand}
         onChange={handleChange}
+        error={Boolean(errors.techBrand)}
+        helperText={errors.techBrand}
         fullWidth
       />
 
-      <FormControl>
+      <FormControl error={Boolean(errors.role)}>
         <FormLabel id={'role-label'}>User Role</FormLabel>
         <RadioGroup
           row
@@ -259,17 +270,16 @@ function RegisterForm({ formData, handleChange, handleSubmit }) {
           onChange={handleChange}
           sx={{ mt: 0.5 }}
         >
-          <FormControlLabel
-            value={'Engineer'}
-            control={<Radio />}
-            label={'Engineer'}
-          />
-          <FormControlLabel
-            value={'Tester'}
-            control={<Radio />}
-            label={'Tester'}
-          />
+          {roleOptions.map((role) => (
+            <FormControlLabel
+              key={role}
+              value={role}
+              control={<Radio />}
+              label={role}
+            />
+          ))}
         </RadioGroup>
+        <FormHelperText>{errors.role}</FormHelperText>
       </FormControl>
 
       <Button
@@ -363,6 +373,7 @@ function App() {
     techBrand: '',
     role: '',
   })
+  const [errors, setErrors] = useState({})
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -371,10 +382,31 @@ function App() {
       ...previousData,
       [name]: value,
     }))
+
+    setErrors((previousErrors) => ({
+      ...previousErrors,
+      [name]: validateField(name, value),
+    }))
   }
 
   const handleSubmit = (event) => {
     event.preventDefault()
+
+    const formErrors = {}
+
+    Object.entries(formData).forEach(([name, value]) => {
+      const errorMessage = validateField(name, value)
+
+      if (errorMessage) {
+        formErrors[name] = errorMessage
+      }
+    })
+
+    setErrors(formErrors)
+
+    if (Object.keys(formErrors).length > 0) {
+      return
+    }
   }
 
   return (
@@ -396,6 +428,7 @@ function App() {
           >
             <RegisterForm
               formData={formData}
+              errors={errors}
               handleChange={handleChange}
               handleSubmit={handleSubmit}
             />
