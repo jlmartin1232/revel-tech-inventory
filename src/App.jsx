@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import {
-  AppBar, Box, Button, Container, CssBaseline, Paper, Stack,
-  ThemeProvider, Toolbar, Typography, createTheme,
+  AppBar, Box, Button, Container, CssBaseline, FormControl,
+  FormControlLabel, FormLabel, InputLabel, MenuItem, Paper, Radio,
+  RadioGroup, Select, Stack, TextField, ThemeProvider, Toolbar,
+  Typography, createTheme,
 } from '@mui/material'
 import AppRegistrationRoundedIcon from '@mui/icons-material/AppRegistrationRounded'
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
@@ -133,7 +135,7 @@ function OverviewCard({ label, value, Icon }) {
   )
 }
 
-function ViewPanel({ Icon, title, subtitle, placeholder }) {
+function ViewPanel({ Icon, title, subtitle, placeholder, children }) {
   return (
     <Paper
       component={'section'}
@@ -161,7 +163,8 @@ function ViewPanel({ Icon, title, subtitle, placeholder }) {
           </Typography>
         </Box>
       </Stack>
-      <Box
+      {children || (
+        <Box
         sx={{
           mt: 4,
           minHeight: { xs: 170, sm: 210 },
@@ -174,12 +177,115 @@ function ViewPanel({ Icon, title, subtitle, placeholder }) {
           borderColor: '#d7d7da',
           borderRadius: 3,
         }}
-      >
-        <Typography color={'text.secondary'} sx={{ fontSize: 14 }}>
-          {placeholder}
-        </Typography>
-      </Box>
+        >
+          <Typography color={'text.secondary'} sx={{ fontSize: 14 }}>
+            {placeholder}
+          </Typography>
+        </Box>
+      )}
     </Paper>
+  )
+}
+
+function RegisterForm({ formData, handleChange, handleSubmit }) {
+  return (
+    <Box
+      component={'form'}
+      onSubmit={handleSubmit}
+      sx={{
+        mt: 4,
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+        gap: 3,
+      }}
+    >
+      <TextField
+        label={'Gadget Name'}
+        name={'gadgetName'}
+        value={formData.gadgetName}
+        onChange={handleChange}
+        fullWidth
+      />
+
+      <FormControl fullWidth>
+        <InputLabel id={'category-label'}>Category</InputLabel>
+        <Select
+          labelId={'category-label'}
+          id={'category'}
+          name={'category'}
+          value={formData.category}
+          label={'Category'}
+          onChange={handleChange}
+        >
+          <MenuItem value={'Smartphone'}>Smartphone</MenuItem>
+          <MenuItem value={'Laptop'}>Laptop</MenuItem>
+          <MenuItem value={'Wearable'}>Wearable</MenuItem>
+          <MenuItem value={'Audio'}>Audio</MenuItem>
+        </Select>
+      </FormControl>
+
+      <TextField
+        label={'Manufacturer'}
+        name={'manufacturer'}
+        value={formData.manufacturer}
+        onChange={handleChange}
+        fullWidth
+      />
+
+      <TextField
+        label={'Health Rating'}
+        name={'healthRating'}
+        type={'number'}
+        value={formData.healthRating}
+        onChange={handleChange}
+        fullWidth
+      />
+
+      <TextField
+        label={'Tech Brand Name'}
+        name={'techBrand'}
+        value={formData.techBrand}
+        onChange={handleChange}
+        fullWidth
+      />
+
+      <FormControl>
+        <FormLabel id={'role-label'}>User Role</FormLabel>
+        <RadioGroup
+          row
+          aria-labelledby={'role-label'}
+          name={'role'}
+          value={formData.role}
+          onChange={handleChange}
+          sx={{ mt: 0.5 }}
+        >
+          <FormControlLabel
+            value={'Engineer'}
+            control={<Radio />}
+            label={'Engineer'}
+          />
+          <FormControlLabel
+            value={'Tester'}
+            control={<Radio />}
+            label={'Tester'}
+          />
+        </RadioGroup>
+      </FormControl>
+
+      <Button
+        type={'submit'}
+        variant={'contained'}
+        disableElevation
+        sx={{
+          gridColumn: { md: '1 / -1' },
+          justifySelf: 'start',
+          px: 3,
+          py: 1.25,
+        }}
+      >
+        Register Gadget
+      </Button>
+    </Box>
   )
 }
 
@@ -249,6 +355,27 @@ function Overview() {
 
 function App() {
   const [currentView, setCurrentView] = useState('register')
+  const [formData, setFormData] = useState({
+    gadgetName: '',
+    category: '',
+    manufacturer: '',
+    healthRating: '',
+    techBrand: '',
+    role: '',
+  })
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+
+    setFormData((previousData) => ({
+      ...previousData,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -266,8 +393,13 @@ function App() {
             Icon={AppRegistrationRoundedIcon}
             title={'Register a Gadget'}
             subtitle={'Add a new device to your REVEL inventory.'}
-            placeholder={'Registration form will be added in the next phase.'}
-          />
+          >
+            <RegisterForm
+              formData={formData}
+              handleChange={handleChange}
+              handleSubmit={handleSubmit}
+            />
+          </ViewPanel>
         ) : (
           <ViewPanel
             Icon={Inventory2OutlinedIcon}
