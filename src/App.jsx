@@ -10,6 +10,7 @@ import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import DevicesRoundedIcon from '@mui/icons-material/DevicesRounded'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import MonitorHeartOutlinedIcon from '@mui/icons-material/MonitorHeartOutlined'
+import GadgetTable from './components/GadgetTable'
 import { categoryOptions, roleOptions, validateField } from './validation'
 
 const theme = createTheme({
@@ -385,6 +386,7 @@ function App() {
   const [formData, setFormData] = useState(emptyFormData)
   const [errors, setErrors] = useState({})
   const [gadgets, setGadgets] = useState([])
+  const [selectedGadget, setSelectedGadget] = useState(null)
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -460,13 +462,14 @@ function App() {
             Icon={Inventory2OutlinedIcon}
             title={'Gadget Registry'}
             subtitle={'View and manage registered technology devices.'}
-            placeholder={
-              gadgets.length === 0
-                ? 'No gadgets registered yet.'
-                : gadgets.length +
-                  ' gadget(s) registered. The inventory table will be added in the next phase.'
-            }
-          />
+          >
+            <GadgetTable
+              gadgets={gadgets}
+              selectedGadget={selectedGadget}
+              onSelect={setSelectedGadget}
+              onRegister={() => setCurrentView('register')}
+            />
+          </ViewPanel>
         )}
       </Container>
     </ThemeProvider>
