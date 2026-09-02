@@ -35,11 +35,14 @@ const theme = createTheme({
   },
 })
 
-const overviewItems = [
-  ['Registered Devices', '0', Inventory2OutlinedIcon],
-  ['Average Health', '\u2014', MonitorHeartOutlinedIcon],
-  ['Device Categories', '4', CategoryOutlinedIcon],
-]
+const emptyFormData = {
+  gadgetName: '',
+  category: '',
+  manufacturer: '',
+  healthRating: '',
+  techBrand: '',
+  role: '',
+}
 
 const iconBoxStyles = {
   width: 42,
@@ -336,7 +339,21 @@ function Introduction() {
   )
 }
 
-function Overview() {
+function Overview({ gadgets }) {
+  const averageHealth =
+    gadgets.length > 0
+      ? Math.round(
+          gadgets.reduce((total, gadget) => total + gadget.healthRating, 0) /
+            gadgets.length,
+        )
+      : '\u2014'
+
+  const overviewItems = [
+    ['Registered Devices', gadgets.length, Inventory2OutlinedIcon],
+    ['Average Health', averageHealth, MonitorHeartOutlinedIcon],
+    ['Device Categories', '4', CategoryOutlinedIcon],
+  ]
+
   return (
     <Box
       component={'section'}
@@ -365,15 +382,9 @@ function Overview() {
 
 function App() {
   const [currentView, setCurrentView] = useState('register')
-  const [formData, setFormData] = useState({
-    gadgetName: '',
-    category: '',
-    manufacturer: '',
-    healthRating: '',
-    techBrand: '',
-    role: '',
-  })
+  const [formData, setFormData] = useState(emptyFormData)
   const [errors, setErrors] = useState({})
+  const [gadgets, setGadgets] = useState([])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -407,6 +418,17 @@ function App() {
     if (Object.keys(formErrors).length > 0) {
       return
     }
+
+    const newGadget = {
+      id: Date.now(),
+      ...formData,
+      healthRating: Number(formData.healthRating),
+    }
+
+    setGadgets((previousGadgets) => [...previousGadgets, newGadget])
+    setFormData(emptyFormData)
+    setErrors({})
+    setCurrentView('registry')
   }
 
   return (
@@ -419,7 +441,7 @@ function App() {
         sx={{ py: { xs: 6, sm: 8, md: 10 } }}
       >
         <Introduction />
-        <Overview />
+        <Overview gadgets={gadgets} />
         {currentView === 'register' ? (
           <ViewPanel
             Icon={AppRegistrationRoundedIcon}
@@ -438,7 +460,12 @@ function App() {
             Icon={Inventory2OutlinedIcon}
             title={'Gadget Registry'}
             subtitle={'View and manage registered technology devices.'}
-            placeholder={'Inventory table will be added in the next phase.'}
+            placeholder={
+              gadgets.length === 0
+                ? 'No gadgets registered yet.'
+                : gadgets.length +
+                  ' gadget(s) registered. The inventory table will be added in the next phase.'
+            }
           />
         )}
       </Container>
