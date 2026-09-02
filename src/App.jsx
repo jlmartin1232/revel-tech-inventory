@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AppBar, Box, Button, Container, CssBaseline, FormControl,
   FormControlLabel, FormHelperText, FormLabel, InputLabel, MenuItem, Paper, Radio,
@@ -6,12 +6,15 @@ import {
   Typography, createTheme,
 } from '@mui/material'
 import AppRegistrationRoundedIcon from '@mui/icons-material/AppRegistrationRounded'
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import DevicesRoundedIcon from '@mui/icons-material/DevicesRounded'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import MonitorHeartOutlinedIcon from '@mui/icons-material/MonitorHeartOutlined'
 import GadgetTable from './components/GadgetTable'
 import { categoryOptions, roleOptions, validateField } from './validation'
+
+const STORAGE_KEY = 'revel-gadgets'
 
 const theme = createTheme({
   palette: {
@@ -69,7 +72,10 @@ function Header({ currentView, onViewChange }) {
         backdropFilter: 'blur(16px)',
       }}
     >
-      <Container maxWidth={'lg'}>
+      <Container
+        maxWidth={false}
+        sx={{ maxWidth: 1360, px: { xs: 2, sm: 3, md: 4 } }}
+      >
         <Toolbar disableGutters sx={{ minHeight: { xs: 68, sm: 76 } }}>
           <Stack direction={'row'} spacing={1.25} sx={{ alignItems: 'center' }}>
             <Box sx={iconBoxStyles}>
@@ -140,7 +146,7 @@ function OverviewCard({ label, value, Icon }) {
   )
 }
 
-function ViewPanel({ Icon, title, subtitle, placeholder, children }) {
+function ViewPanel({ Icon, title, subtitle, placeholder, action, children }) {
   return (
     <Paper
       component={'section'}
@@ -152,21 +158,45 @@ function ViewPanel({ Icon, title, subtitle, placeholder, children }) {
         boxShadow: '0 14px 40px rgba(0, 0, 0, 0.04)',
       }}
     >
-      <Stack direction={'row'} spacing={2} sx={{ alignItems: 'flex-start' }}>
-        <Box sx={{ ...iconBoxStyles, width: 46, height: 46 }}>
-          <Icon />
-        </Box>
-        <Box>
-          <Typography
-            component={'h2'}
-            sx={{ fontSize: { xs: 23, sm: 27 }, fontWeight: 700 }}
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        sx={{
+          width: '100%',
+          alignItems: { xs: 'stretch', sm: 'center' },
+        }}
+      >
+        <Stack direction={'row'} spacing={2} sx={{ alignItems: 'flex-start' }}>
+          <Box sx={{ ...iconBoxStyles, width: 46, height: 46 }}>
+            <Icon />
+          </Box>
+          <Box>
+            <Typography
+              component={'h2'}
+              sx={{ fontSize: { xs: 23, sm: 27 }, fontWeight: 700 }}
+            >
+              {title}
+            </Typography>
+            <Typography
+              color={'text.secondary'}
+              sx={{ mt: 0.5, lineHeight: 1.6 }}
+            >
+              {subtitle}
+            </Typography>
+          </Box>
+        </Stack>
+        {action && (
+          <Box
+            sx={{
+              display: 'flex',
+              flexGrow: { sm: 1 },
+              flexShrink: 0,
+              justifyContent: { sm: 'flex-end' },
+            }}
           >
-            {title}
-          </Typography>
-          <Typography color={'text.secondary'} sx={{ mt: 0.5, lineHeight: 1.6 }}>
-            {subtitle}
-          </Typography>
-        </Box>
+            {action}
+          </Box>
+        )}
       </Stack>
       {children || (
         <Box
@@ -385,8 +415,42 @@ function App() {
   const [currentView, setCurrentView] = useState('register')
   const [formData, setFormData] = useState(emptyFormData)
   const [errors, setErrors] = useState({})
-  const [gadgets, setGadgets] = useState([])
+  const [gadgets, setGadgets] = useState(() => {
+    try {
+      const storedGadgets = localStorage.getItem(STORAGE_KEY)
+
+      if (!storedGadgets) return []
+
+      const parsedGadgets = JSON.parse(storedGadgets)
+      return Array.isArray(parsedGadgets) ? parsedGadgets : []
+    } catch {
+      return []
+    }
+  })
   const [selectedGadget, setSelectedGadget] = useState(null)
+  const [activeGadget, setActiveGadget] = useState(null)
+  const [categoryFilter, setCategoryFilter] = useState('All')
+
+  useEffect(() => {
+    if (selectedGadget) {
+      // Required by the practical exam to demonstrate effect-based synchronization.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveGadget(selectedGadget)
+    }
+  }, [selectedGadget])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(gadgets))
+    } catch {
+      // Keep the in-memory inventory working if browser storage is unavailable.
+    }
+  }, [gadgets])
+
+  const filteredGadgets =
+    categoryFilter === 'All'
+      ? gadgets
+      : gadgets.filter((gadget) => gadget.category === categoryFilter)
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -433,14 +497,32 @@ function App() {
     setCurrentView('registry')
   }
 
+  const handleDeleteGadget = (id) => {
+    setGadgets((currentGadgets) =>
+      currentGadgets.filter((gadget) => gadget.id !== id),
+    )
+
+    if (selectedGadget?.id === id) {
+      setSelectedGadget(null)
+    }
+
+    if (activeGadget?.id === id) {
+      setActiveGadget(null)
+    }
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Header currentView={currentView} onViewChange={setCurrentView} />
       <Container
         component={'main'}
-        maxWidth={'lg'}
-        sx={{ py: { xs: 6, sm: 8, md: 10 } }}
+        maxWidth={false}
+        sx={{
+          maxWidth: 1360,
+          px: { xs: 2, sm: 3, md: 4 },
+          py: { xs: 6, sm: 8, md: 10 },
+        }}
       >
         <Introduction />
         <Overview gadgets={gadgets} />
@@ -462,11 +544,27 @@ function App() {
             Icon={Inventory2OutlinedIcon}
             title={'Gadget Registry'}
             subtitle={'View and manage registered technology devices.'}
+            action={
+              <Button
+                variant={'contained'}
+                startIcon={<AddRoundedIcon />}
+                disableElevation
+                onClick={() => setCurrentView('register')}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
+              >
+                Register a Gadget
+              </Button>
+            }
           >
             <GadgetTable
-              gadgets={gadgets}
+              gadgets={filteredGadgets}
+              hasInventory={gadgets.length > 0}
               selectedGadget={selectedGadget}
+              activeGadget={activeGadget}
+              categoryFilter={categoryFilter}
               onSelect={setSelectedGadget}
+              onDelete={handleDeleteGadget}
+              onCategoryFilterChange={setCategoryFilter}
               onRegister={() => setCurrentView('register')}
             />
           </ViewPanel>
